@@ -14,7 +14,7 @@
           fadeElements.forEach(function (element, index) {
             setTimeout(function () {
               element.classList.add('fade-in-active');
-            }, index * 50);
+            }, index * 25);
           });
 
           observer.unobserve(entry.target);
