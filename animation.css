@@ -2,30 +2,31 @@
    FADE IN
 ================================================== */
 
-/* Initial hidden state for every fade-in element */
-.fade-section .fade-in {
-  opacity: 0;
-  transform: translateY(18px);
-
-  /* Quick but smooth, no bounce / no snap-back */
-  transition:
-    opacity 0.45s ease-out,
-    transform 0.45s ease-out;
-
-  will-change: opacity, transform;
-}
-
-/* Added by JavaScript when the section enters the viewport */
-.fade-section .fade-in.fade-in-active {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Disables animation for users who prefer reduced motion */
-@media (prefers-reduced-motion: reduce) {
+  /* Initial hidden state for every fade-in element */
   .fade-section .fade-in {
-    opacity: 1;
-    transform: none;
-    transition: none;
+    opacity: 0;
+    transform: translateY(24px);
+
+    /* Controls the fade and upward movement speed */
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s ease;
+
+    /* Helps the browser prepare for the animation */
+    will-change: opacity, transform;
   }
-}
+
+  /* Added by JavaScript when the section enters the viewport */
+  .fade-section .fade-in.fade-in-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Disables animation for users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-section .fade-in {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
