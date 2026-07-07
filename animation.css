@@ -5,21 +5,31 @@
 /* Initial hidden state for every fade-in element */
 .fade-section .fade-in {
   opacity: 0;
-  transform: translateY(56px);
-
-  /* Controls the fade and upward movement speed */
-  transition:
-    opacity 0.9s ease,
-    transform 0.9s ease;
-
-  /* Helps the browser prepare for the animation */
+  transform: translateY(10px) scale(0.98);
   will-change: opacity, transform;
 }
 
 /* Added by JavaScript when the section enters the viewport */
 .fade-section .fade-in.fade-in-active {
-  opacity: 1;
-  transform: translateY(0);
+  animation: flashFadeIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Snappy Adobe Flash-style pop */
+@keyframes flashFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Disables animation for users who prefer reduced motion */
@@ -27,6 +37,10 @@
   .fade-section .fade-in {
     opacity: 1;
     transform: none;
-    transition: none;
+    animation: none;
+  }
+
+  .fade-section .fade-in.fade-in-active {
+    animation: none;
   }
 }
