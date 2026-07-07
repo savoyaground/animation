@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const fadeElements = document.querySelectorAll('.fade-in');
+  const fadeElements = document.querySelectorAll('.fade-section .fade-in');
 
   if (!fadeElements.length) return;
 
