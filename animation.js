@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const fadeElements = document.querySelectorAll('.fade-section .fade-in');
+  const fadeElements = document.querySelectorAll('.fade-in');
 
   if (!fadeElements.length) return;
 
@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     },
     {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
+      threshold: 0.05,
+      rootMargin: '0px 0px 100px 0px'
     }
   );
 
