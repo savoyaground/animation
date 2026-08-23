@@ -30,3 +30,28 @@
       transition: none;
     }
   }
+
+/* ============================
+Character Fade
+============================ */
+
+.character-fade-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.15em);
+
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+
+  transition-delay: calc(var(--character-index) * 35ms);
+}
+
+.character-fade-active .character-fade-char {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.character-fade-space {
+  display: inline-block;
+}
