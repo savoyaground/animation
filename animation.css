@@ -32,9 +32,16 @@
   }
 
 /* ============================
-Character Fade
+   Character Fade
 ============================ */
 
+/* Keeps each word together when wrapping */
+.character-fade-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Individual animated characters */
 .character-fade-char {
   display: inline-block;
   opacity: 0;
@@ -47,11 +54,8 @@ Character Fade
   transition-delay: calc(var(--character-index) * 35ms);
 }
 
+/* Animate when visible */
 .character-fade-active .character-fade-char {
   opacity: 1;
   transform: translateY(0);
-}
-
-.character-fade-space {
-  display: inline-block;
 }
