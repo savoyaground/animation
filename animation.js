@@ -27,64 +27,69 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+/* ============================
+   Character Fade
+============================ */
 
-  /* ============================
-     Character Fade
-  ============================ */
+const characterFadeElements =
+  document.querySelectorAll('.character-fade');
 
-  const characterFadeElements =
-    document.querySelectorAll('.character-fade');
+if (characterFadeElements.length) {
 
-  if (characterFadeElements.length) {
+  characterFadeElements.forEach(function (element) {
 
-    characterFadeElements.forEach(function (element) {
+    // Prevent duplicate initialization
+    if (element.dataset.characterFadeInitialized) return;
 
-      // Prevent duplicate initialization
-      if (element.dataset.characterFadeInitialized) return;
+    element.dataset.characterFadeInitialized = 'true';
 
-      element.dataset.characterFadeInitialized = 'true';
+    const text = element.textContent.trim();
+    const words = text.split(/\s+/);
+    let characterIndex = 0;
 
-      const text = element.textContent;
+    element.innerHTML = words
+      .map(function (word) {
 
-      element.innerHTML = Array.from(text)
-        .map(function (character, index) {
+        const characters = Array.from(word)
+          .map(function (character) {
 
-          // Preserve spaces
-          if (character === ' ') {
-            return '<span class="character-fade-space">&nbsp;</span>';
-          }
+            const span =
+              '<span class="character-fade-char" ' +
+              'style="--character-index:' + characterIndex + '">' +
+              character +
+              '</span>';
 
-          return (
-            '<span class="character-fade-char" ' +
-            'style="--character-index:' + index + '">' +
-            character +
-            '</span>'
-          );
-        })
-        .join('');
-    });
+            characterIndex++;
 
+            return span;
+          })
+          .join('');
 
-    const characterFadeObserver = new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-
-          entry.target.classList.add('character-fade-active');
-
-          observer.unobserve(entry.target);
-        });
-      },
-      {
-        threshold: 0.05,
-        rootMargin: '0px 0px 100px 0px'
-      }
-    );
+        return '<span class="character-fade-word">' +
+          characters +
+          '</span>';
+      })
+      .join(' ');
+  });
 
 
-    characterFadeElements.forEach(function (element) {
-      characterFadeObserver.observe(element);
-    });
-  }
+  const characterFadeObserver = new IntersectionObserver(
+    function (entries, observer) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
 
-});
+        entry.target.classList.add('character-fade-active');
+        observer.unobserve(entry.target);
+      });
+    },
+    {
+      threshold: 0.05,
+      rootMargin: '0px 0px 100px 0px'
+    }
+  );
+
+
+  characterFadeElements.forEach(function (element) {
+    characterFadeObserver.observe(element);
+  });
+}
