@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
   ============================ */
 
   function animateCounter(counter) {
+    // Prevent duplicate animation
     if (counter.dataset.counterStarted === 'true') return;
 
     const originalText = counter.textContent.trim();
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    // Separate the number from suffixes such as + or %
     const match = originalText.match(/^([\d,.]+)(.*)$/);
 
     if (!match) return;
@@ -52,10 +54,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateCounter(currentTime) {
       const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+
+      const progress = Math.min(
+        elapsed / duration,
+        1
+      );
 
       // Smooth ease-out
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const eased =
+        1 - Math.pow(1 - progress, 3);
+
       const currentValue = target * eased;
 
       counter.textContent =
@@ -79,10 +87,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function startCounters(element) {
     const counters = [];
 
+    // The animated element is also the counter
     if (element.classList.contains('number-counter')) {
       counters.push(element);
     }
 
+    // Counters nested inside the animated element
     element
       .querySelectorAll('.number-counter')
       .forEach(function (counter) {
@@ -108,9 +118,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!fadeElements.length) return;
 
+    // Original 150ms sequential delay
     fadeElements.forEach(function (element, index) {
+      const delay = index * 150;
+
       element.style.transitionDelay =
-        (index * 150) + 'ms';
+        delay + 'ms';
+
+      element.dataset.animationDelay =
+        String(delay);
     });
 
     const fadeObserver = new IntersectionObserver(
@@ -120,11 +136,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
           const element = entry.target;
 
-          element.classList.add('fade-in-active');
+          element.classList.add(
+            'fade-in-active'
+          );
 
-          requestAnimationFrame(function () {
+          const delay = Number(
+            element.dataset.animationDelay || 0
+          );
+
+          // Start counters as this element begins fading
+          window.setTimeout(function () {
             startCounters(element);
-          });
+          }, delay);
 
           observer.unobserve(element);
         });
@@ -141,63 +164,59 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
 
-/* ============================
-   Focus In
-============================ */
+  /* ============================
+     Focus In
+  ============================ */
 
-const focusElements =
-  document.querySelectorAll('.focus-in');
+  const focusElements =
+    document.querySelectorAll('.focus-in');
 
-if (focusElements.length) {
+  if (focusElements.length) {
 
-  /*
-   * Apply a 150ms stagger:
-   *
-   * Item 1:   0ms
-   * Item 2: 150ms
-   * Item 3: 300ms
-   * Item 4: 450ms
-   * Item 5: 600ms
-   * Item 6: 750ms
-   */
-  focusElements.forEach(function (element, index) {
-    element.style.transitionDelay =
-      (index * 150) + 'ms';
-  });
+    // 150ms between every focus-in element
+    focusElements.forEach(function (element, index) {
+      const delay = index * 150;
 
-  const focusObserver = new IntersectionObserver(
-    function (entries, observer) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
+      element.style.transitionDelay =
+        delay + 'ms';
 
-        const element = entry.target;
+      element.dataset.animationDelay =
+        String(delay);
+    });
 
-        element.classList.add(
-          'focus-in-active'
-        );
+    const focusObserver = new IntersectionObserver(
+      function (entries, observer) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
 
-        /*
-         * Start any number counter inside the
-         * card when its focus animation begins.
-         */
-        requestAnimationFrame(function () {
-          startCounters(element);
+          const element = entry.target;
+
+          element.classList.add(
+            'focus-in-active'
+          );
+
+          const delay = Number(
+            element.dataset.animationDelay || 0
+          );
+
+          // Start counters as this card begins focusing
+          window.setTimeout(function () {
+            startCounters(element);
+          }, delay);
+
+          observer.unobserve(element);
         });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: '0px 0px 60px 0px'
+      }
+    );
 
-        // Animate only once
-        observer.unobserve(element);
-      });
-    },
-    {
-      threshold: 0.15,
-      rootMargin: '0px 0px 60px 0px'
-    }
-  );
-
-  focusElements.forEach(function (element) {
-    focusObserver.observe(element);
-  });
-}
+    focusElements.forEach(function (element) {
+      focusObserver.observe(element);
+    });
+  }
 
 
   /* ============================
@@ -214,7 +233,7 @@ if (focusElements.length) {
   });
 
   if (standaloneCounters.length) {
-    const standaloneObserver =
+    const standaloneCounterObserver =
       new IntersectionObserver(
         function (entries, observer) {
           entries.forEach(function (entry) {
@@ -230,86 +249,87 @@ if (focusElements.length) {
       );
 
     standaloneCounters.forEach(function (counter) {
-      standaloneObserver.observe(counter);
+      standaloneCounterObserver.observe(counter);
     });
   }
 
 
   /* ============================
-   Character Fade
-============================ */
+     Character Fade
+  ============================ */
 
-const characterFadeElements =
-  document.querySelectorAll('.character-fade');
+  const characterFadeElements =
+    document.querySelectorAll('.character-fade');
 
-if (characterFadeElements.length) {
-  characterFadeElements.forEach(function (element) {
-    // Prevent duplicate initialization
-    if (
-      element.dataset.characterFadeInitialized === 'true'
-    ) {
-      return;
-    }
-
-    element.dataset.characterFadeInitialized = 'true';
-
-    const text = element.textContent
-      .trim()
-      .replace(/\s+/g, ' ');
-
-    const words = text.split(' ');
-
-    let characterIndex = 0;
-
-    element.innerHTML = words
-      .map(function (word) {
-        const characters = Array.from(word)
-          .map(function (character) {
-            const span =
-              '<span class="character-fade-char" ' +
-              'style="--character-index:' +
-              characterIndex +
-              '">' +
-              character +
-              '</span>';
-
-            characterIndex++;
-
-            return span;
-          })
-          .join('');
-
-        return (
-          '<span class="character-fade-word">' +
-          characters +
-          '</span>'
-        );
-      })
-      .join('');
-  });
-
-  const characterFadeObserver =
-    new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-
-          entry.target.classList.add(
-            'character-fade-active'
-          );
-
-          observer.unobserve(entry.target);
-        });
-      },
-      {
-        threshold: 0.05,
-        rootMargin: '0px 0px 100px 0px'
+  if (characterFadeElements.length) {
+    characterFadeElements.forEach(function (element) {
+      // Prevent duplicate initialization
+      if (
+        element.dataset.characterFadeInitialized === 'true'
+      ) {
+        return;
       }
-    );
 
-  characterFadeElements.forEach(function (element) {
-    characterFadeObserver.observe(element);
-  });
-}
+      element.dataset.characterFadeInitialized = 'true';
+
+      // Normalize the original spaces
+      const text = element.textContent
+        .trim()
+        .replace(/\s+/g, ' ');
+
+      const words = text.split(' ');
+
+      let characterIndex = 0;
+
+      element.innerHTML = words
+        .map(function (word) {
+          const characters = Array.from(word)
+            .map(function (character) {
+              const span =
+                '<span class="character-fade-char" ' +
+                'style="--character-index:' +
+                characterIndex +
+                '">' +
+                character +
+                '</span>';
+
+              characterIndex++;
+
+              return span;
+            })
+            .join('');
+
+          return (
+            '<span class="character-fade-word">' +
+            characters +
+            '</span>'
+          );
+        })
+        .join('');
+    });
+
+    const characterFadeObserver =
+      new IntersectionObserver(
+        function (entries, observer) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+
+            entry.target.classList.add(
+              'character-fade-active'
+            );
+
+            observer.unobserve(entry.target);
+          });
+        },
+        {
+          threshold: 0.05,
+          rootMargin: '0px 0px 100px 0px'
+        }
+      );
+
+    characterFadeElements.forEach(function (element) {
+      characterFadeObserver.observe(element);
+    });
+  }
 
 });
