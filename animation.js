@@ -141,58 +141,63 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
 
-  /* ============================
-     Focus In
-  ============================ */
+/* ============================
+   Focus In
+============================ */
 
-  const focusElements =
-    document.querySelectorAll('.focus-in');
+const focusElements =
+  document.querySelectorAll('.focus-in');
 
-  if (focusElements.length) {
-    focusElements.forEach(function (element, index) {
-      /*
-       * Assumes three cards per row:
-       *
-       * Row 1: 0ms, 60ms, 120ms
-       * Row 2: 40ms, 100ms, 160ms
-       */
-      const column = index % 3;
-      const row = Math.floor(index / 3);
+if (focusElements.length) {
 
-      const delay =
-        (column * 60) + (row * 40);
+  /*
+   * Apply a 150ms stagger:
+   *
+   * Item 1:   0ms
+   * Item 2: 150ms
+   * Item 3: 300ms
+   * Item 4: 450ms
+   * Item 5: 600ms
+   * Item 6: 750ms
+   */
+  focusElements.forEach(function (element, index) {
+    element.style.transitionDelay =
+      (index * 150) + 'ms';
+  });
 
-      element.style.transitionDelay =
-        delay + 'ms';
-    });
+  const focusObserver = new IntersectionObserver(
+    function (entries, observer) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
 
-    const focusObserver = new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
+        const element = entry.target;
 
-          const element = entry.target;
+        element.classList.add(
+          'focus-in-active'
+        );
 
-          element.classList.add('focus-in-active');
-
-          // Start the number as the focus effect begins
-          requestAnimationFrame(function () {
-            startCounters(element);
-          });
-
-          observer.unobserve(element);
+        /*
+         * Start any number counter inside the
+         * card when its focus animation begins.
+         */
+        requestAnimationFrame(function () {
+          startCounters(element);
         });
-      },
-      {
-        threshold: 0.15,
-        rootMargin: '0px 0px 60px 0px'
-      }
-    );
 
-    focusElements.forEach(function (element) {
-      focusObserver.observe(element);
-    });
-  }
+        // Animate only once
+        observer.unobserve(element);
+      });
+    },
+    {
+      threshold: 0.15,
+      rootMargin: '0px 0px 60px 0px'
+    }
+  );
+
+  focusElements.forEach(function (element) {
+    focusObserver.observe(element);
+  });
+}
 
 
   /* ============================
