@@ -236,76 +236,80 @@ if (focusElements.length) {
 
 
   /* ============================
-     Character Fade
-  ============================ */
+   Character Fade
+============================ */
 
-  const characterFadeElements =
-    document.querySelectorAll('.character-fade');
+const characterFadeElements =
+  document.querySelectorAll('.character-fade');
 
-  if (characterFadeElements.length) {
-    characterFadeElements.forEach(function (element) {
-      if (
-        element.dataset.characterFadeInitialized
-      ) {
-        return;
-      }
+if (characterFadeElements.length) {
+  characterFadeElements.forEach(function (element) {
+    // Prevent duplicate initialization
+    if (
+      element.dataset.characterFadeInitialized === 'true'
+    ) {
+      return;
+    }
 
-      element.dataset.characterFadeInitialized = 'true';
+    element.dataset.characterFadeInitialized = 'true';
 
-      const text = element.textContent.trim();
-      const words = text.split(/\s+/);
+    const text = element.textContent
+      .trim()
+      .replace(/\s+/g, ' ');
 
-      let characterIndex = 0;
+    const words = text.split(' ');
 
-      element.innerHTML = words
-        .map(function (word) {
-          const characters = Array.from(word)
-            .map(function (character) {
-              const span =
-                '<span class="character-fade-char" ' +
-                'style="--character-index:' +
-                characterIndex +
-                '">' +
-                character +
-                '</span>';
+    let characterIndex = 0;
 
-              characterIndex++;
+    element.innerHTML = words
+      .map(function (word) {
+        const characters = Array.from(word)
+          .map(function (character) {
+            const span =
+              '<span class="character-fade-char" ' +
+              'style="--character-index:' +
+              characterIndex +
+              '">' +
+              character +
+              '</span>';
 
-              return span;
-            })
-            .join('');
+            characterIndex++;
 
-          return (
-            '<span class="character-fade-word">' +
-            characters +
-            '</span>'
+            return span;
+          })
+          .join('');
+
+        return (
+          '<span class="character-fade-word">' +
+          characters +
+          '</span>'
+        );
+      })
+      .join('');
+  });
+
+  const characterFadeObserver =
+    new IntersectionObserver(
+      function (entries, observer) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+
+          entry.target.classList.add(
+            'character-fade-active'
           );
-        })
-        .join(' ');
-    });
 
-    const characterFadeObserver =
-      new IntersectionObserver(
-        function (entries, observer) {
-          entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+        });
+      },
+      {
+        threshold: 0.05,
+        rootMargin: '0px 0px 100px 0px'
+      }
+    );
 
-            entry.target.classList.add(
-              'character-fade-active'
-            );
-
-            observer.unobserve(entry.target);
-          });
-        },
-        {
-          threshold: 0.05,
-          rootMargin: '0px 0px 100px 0px'
-        }
-      );
-
-    characterFadeElements.forEach(function (element) {
-      characterFadeObserver.observe(element);
-    });
-  }
+  characterFadeElements.forEach(function (element) {
+    characterFadeObserver.observe(element);
+  });
+}
 
 });
