@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', function () {
   ============================ */
 
   function animateCounter(counter) {
-    // Prevent duplicate animation
     if (counter.dataset.counterStarted === 'true') return;
 
     const originalText = counter.textContent.trim();
@@ -16,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Separate the number from suffixes such as + or %
+    // Separate the numeric value from +, %, K, etc.
     const match = originalText.match(/^([\d,.]+)(.*)$/);
 
     if (!match) return;
@@ -118,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!fadeElements.length) return;
 
-    // Original 150ms sequential delay
+    // Apply a 150ms stagger
     fadeElements.forEach(function (element, index) {
       const delay = index * 150;
 
@@ -144,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
             element.dataset.animationDelay || 0
           );
 
-          // Start counters as this element begins fading
+          // Start counters when the element starts fading
           window.setTimeout(function () {
             startCounters(element);
           }, delay);
@@ -172,8 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.focus-in');
 
   if (focusElements.length) {
-
-    // 150ms between every focus-in element
+    // Apply a 150ms delay between each item
     focusElements.forEach(function (element, index) {
       const delay = index * 150;
 
@@ -199,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
             element.dataset.animationDelay || 0
           );
 
-          // Start counters as this card begins focusing
+          // Start counters when the card begins focusing
           window.setTimeout(function () {
             startCounters(element);
           }, delay);
@@ -233,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   if (standaloneCounters.length) {
-    const standaloneCounterObserver =
+    const counterObserver =
       new IntersectionObserver(
         function (entries, observer) {
           entries.forEach(function (entry) {
@@ -249,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function () {
       );
 
     standaloneCounters.forEach(function (counter) {
-      standaloneCounterObserver.observe(counter);
+      counterObserver.observe(counter);
     });
   }
 
@@ -272,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       element.dataset.characterFadeInitialized = 'true';
 
-      // Normalize the original spaces
+      // Normalize spaces from the original text
       const text = element.textContent
         .trim()
         .replace(/\s+/g, ' ');
@@ -331,5 +329,48 @@ document.addEventListener('DOMContentLoaded', function () {
       characterFadeObserver.observe(element);
     });
   }
+
+
+  /* ============================
+     Mask Reveal Up
+  ============================ */
+
+  const revealGroups =
+    document.querySelectorAll('.reveal-up-group');
+
+  revealGroups.forEach(function (group) {
+    const revealElements =
+      group.querySelectorAll('.reveal-up');
+
+    if (!revealElements.length) return;
+
+    // Apply a 150ms delay between each item
+    revealElements.forEach(function (element, index) {
+      element.style.transitionDelay =
+        (index * 150) + 'ms';
+    });
+
+    const revealObserver = new IntersectionObserver(
+      function (entries, observer) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+
+          revealElements.forEach(function (element) {
+            element.classList.add(
+              'reveal-up-active'
+            );
+          });
+
+          observer.unobserve(entry.target);
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: '0px 0px 60px 0px'
+      }
+    );
+
+    revealObserver.observe(group);
+  });
 
 });
