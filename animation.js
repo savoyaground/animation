@@ -1,72 +1,171 @@
-<script>
 document.addEventListener('DOMContentLoaded', function () {
 
   /* ============================
      Number Counter
   ============================ */
 
-  function startCounter(counter) {
-    // Prevent duplicate animation
+  function animateCounter(counter) {
     if (counter.dataset.counterStarted === 'true') return;
-    counter.dataset.counterStarted = 'true';
 
     const originalText = counter.textContent.trim();
 
     // Skip fractions such as 24/7
-    if (originalText.includes('/')) return;
+    if (originalText.includes('/')) {
+      counter.dataset.counterStarted = 'true';
+      return;
+    }
 
-    // Separate the number from suffixes such as %, +, K, etc.
+    // Capture the number and suffix separately
     const match = originalText.match(/^([\d,.]+)(.*)$/);
 
     if (!match) return;
 
+    const numberText = match[1];
+    const suffix = match[2] || '';
+
     const target = parseFloat(
-      match[1].replace(/,/g, '')
+      numberText.replace(/,/g, '')
     );
 
     if (Number.isNaN(target)) return;
 
-    const suffix = match[2] || '';
+    counter.dataset.counterStarted = 'true';
 
-    const decimals = match[1].includes('.')
-      ? match[1].split('.')[1].length
+    const decimals = numberText.includes('.')
+      ? numberText.split('.')[1].length
       : 0;
 
-    const usesCommas = match[1].includes(',');
+    const usesCommas = numberText.includes(',');
     const duration = 1400;
     const startTime = performance.now();
 
     function formatValue(value) {
-      const fixedValue = value.toFixed(decimals);
+      const formatted = value.toFixed(decimals);
 
-      if (!usesCommas) return fixedValue;
+      if (!usesCommas) return formatted;
 
-      const parts = fixedValue.split('.');
+      const parts = formatted.split('.');
 
       parts[0] = Number(parts[0]).toLocaleString('en-US');
 
       return parts.join('.');
     }
 
-    function animateCounter(currentTime) {
+    function updateCounter(currentTime) {
       const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+
+      const progress = Math.min(
+        elapsed / duration,
+        1
+      );
 
       // Smooth ease-out
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const eased =
+        1 - Math.pow(1 - progress, 3);
+
       const currentValue = target * eased;
 
       counter.textContent =
         formatValue(currentValue) + suffix;
 
       if (progress < 1) {
-        requestAnimationFrame(animateCounter);
+        requestAnimationFrame(updateCounter);
       } else {
         counter.textContent = originalText;
       }
     }
 
-    requestAnimationFrame(animateCounter);
+    requestAnimationFrame(updateCounter);
+  }
+
+
+  /* ============================
+     Start Counters After Fade
+  ============================ */
+
+  function startCountersAfterFade(fadeElement) {
+    const counters = [];
+
+    // The same element has both classes
+    if (fadeElement.classList.contains('number-counter')) {
+      counters.push(fadeElement);
+    }
+
+    // Counters nested inside the fade-in element
+    fadeElement
+      .querySelectorAll('.number-counter')
+      .forEach(function (counter) {
+        counters.push(counter);
+      });
+
+    if (!counters.length) return;
+
+    let countersStarted = false;
+
+    function startCounters() {
+      if (countersStarted) return;
+
+      countersStarted = true;
+
+      fadeElement.removeEventListener(
+        'transitionend',
+        handleTransitionEnd
+      );
+
+      counters.forEach(function (counter) {
+        animateCounter(counter);
+      });
+    }
+
+    function handleTransitionEnd(event) {
+      if (event.target !== fadeElement) return;
+
+      if (
+        event.propertyName !== 'opacity' &&
+        event.propertyName !== 'transform'
+      ) {
+        return;
+      }
+
+      startCounters();
+    }
+
+    fadeElement.addEventListener(
+      'transitionend',
+      handleTransitionEnd
+    );
+
+    // Fallback if transitionend does not fire
+    const styles = window.getComputedStyle(fadeElement);
+
+    const durations = styles.transitionDuration
+      .split(',')
+      .map(function (value) {
+        return value.includes('ms')
+          ? parseFloat(value)
+          : parseFloat(value) * 1000;
+      });
+
+    const delays = styles.transitionDelay
+      .split(',')
+      .map(function (value) {
+        return value.includes('ms')
+          ? parseFloat(value)
+          : parseFloat(value) * 1000;
+      });
+
+    const totalTransitionTime = Math.max(
+      ...durations.map(function (duration, index) {
+        return duration +
+          (delays[index] || delays[0] || 0);
+      }),
+      0
+    );
+
+    window.setTimeout(
+      startCounters,
+      totalTransitionTime + 50
+    );
   }
 
 
@@ -83,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!fadeElements.length) return;
 
-    // Assign sequential fade delays
+    // Assign sequential delays
     fadeElements.forEach(function (element, index) {
       element.style.transitionDelay =
         (index * 150) + 'ms';
@@ -96,74 +195,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
           const fadeElement = entry.target;
 
-          fadeElement.classList.add('fade-in-active');
+          // Prepare counters before activating the fade
+          startCountersAfterFade(fadeElement);
+
+          fadeElement.classList.add(
+            'fade-in-active'
+          );
+
           observer.unobserve(fadeElement);
-
-          const counters = [];
-
-          // Counter and fade-in may be the same element
-          if (fadeElement.matches('.number-counter')) {
-            counters.push(fadeElement);
-          }
-
-          // Find counters nested inside the fade-in element
-          fadeElement
-            .querySelectorAll('.number-counter')
-            .forEach(function (counter) {
-              counters.push(counter);
-            });
-
-          if (!counters.length) return;
-
-          let hasStarted = false;
-
-          function startCountersAfterFade() {
-            if (hasStarted) return;
-            hasStarted = true;
-
-            counters.forEach(function (counter) {
-              startCounter(counter);
-            });
-          }
-
-          // Start when the fade transition completes
-          fadeElement.addEventListener(
-            'transitionend',
-            startCountersAfterFade,
-            { once: true }
-          );
-
-          // Fallback in case transitionend doesn't fire
-          const styles = window.getComputedStyle(fadeElement);
-
-          const durations = styles.transitionDuration
-            .split(',')
-            .map(function (value) {
-              return parseFloat(value) * (
-                value.includes('ms') ? 1 : 1000
-              );
-            });
-
-          const delays = styles.transitionDelay
-            .split(',')
-            .map(function (value) {
-              return parseFloat(value) * (
-                value.includes('ms') ? 1 : 1000
-              );
-            });
-
-          const totalTransitionTime = Math.max(
-            ...durations.map(function (duration, index) {
-              return duration +
-                (delays[index] || delays[0] || 0);
-            }),
-            0
-          );
-
-          window.setTimeout(
-            startCountersAfterFade,
-            totalTransitionTime + 50
-          );
         });
       },
       {
@@ -179,38 +218,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   /* ============================
-     Standalone Number Counters
-  ============================ */
-
-  // Fallback for counters not associated with a fade-in element
-  const standaloneCounters = Array.from(
-    document.querySelectorAll('.number-counter')
-  ).filter(function (counter) {
-    return !counter.closest('.fade-in');
-  });
-
-  if (standaloneCounters.length) {
-    const counterObserver = new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-
-          startCounter(entry.target);
-          observer.unobserve(entry.target);
-        });
-      },
-      {
-        threshold: 0.35
-      }
-    );
-
-    standaloneCounters.forEach(function (counter) {
-      counterObserver.observe(counter);
-    });
-  }
-
-
-  /* ============================
      Character Fade
   ============================ */
 
@@ -219,13 +226,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (characterFadeElements.length) {
     characterFadeElements.forEach(function (element) {
-      // Prevent duplicate initialization
-      if (element.dataset.characterFadeInitialized) return;
 
-      element.dataset.characterFadeInitialized = 'true';
+      // Prevent duplicate initialization
+      if (
+        element.dataset.characterFadeInitialized
+      ) {
+        return;
+      }
+
+      element.dataset.characterFadeInitialized =
+        'true';
 
       const text = element.textContent.trim();
       const words = text.split(/\s+/);
+
       let characterIndex = 0;
 
       element.innerHTML = words
@@ -280,4 +294,3 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
-</script>
