@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
   ============================ */
 
   function animateCounter(counter) {
+    // Prevent duplicate animation
     if (counter.dataset.counterStarted === 'true') return;
 
     const originalText = counter.textContent.trim();
@@ -15,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Capture the number and suffix separately
     const match = originalText.match(/^([\d,.]+)(.*)$/);
 
     if (!match) return;
@@ -80,92 +80,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   /* ============================
-     Start Counters After Fade
+     Start Counters
   ============================ */
 
-  function startCountersAfterFade(fadeElement) {
+  function startCounters(fadeElement) {
     const counters = [];
 
-    // The same element has both classes
+    // Same element has both classes
     if (fadeElement.classList.contains('number-counter')) {
       counters.push(fadeElement);
     }
 
-    // Counters nested inside the fade-in element
+    // Counters nested inside the fade element
     fadeElement
       .querySelectorAll('.number-counter')
       .forEach(function (counter) {
         counters.push(counter);
       });
 
-    if (!counters.length) return;
-
-    let countersStarted = false;
-
-    function startCounters() {
-      if (countersStarted) return;
-
-      countersStarted = true;
-
-      fadeElement.removeEventListener(
-        'transitionend',
-        handleTransitionEnd
-      );
-
-      counters.forEach(function (counter) {
-        animateCounter(counter);
-      });
-    }
-
-    function handleTransitionEnd(event) {
-      if (event.target !== fadeElement) return;
-
-      if (
-        event.propertyName !== 'opacity' &&
-        event.propertyName !== 'transform'
-      ) {
-        return;
-      }
-
-      startCounters();
-    }
-
-    fadeElement.addEventListener(
-      'transitionend',
-      handleTransitionEnd
-    );
-
-    // Fallback if transitionend does not fire
-    const styles = window.getComputedStyle(fadeElement);
-
-    const durations = styles.transitionDuration
-      .split(',')
-      .map(function (value) {
-        return value.includes('ms')
-          ? parseFloat(value)
-          : parseFloat(value) * 1000;
-      });
-
-    const delays = styles.transitionDelay
-      .split(',')
-      .map(function (value) {
-        return value.includes('ms')
-          ? parseFloat(value)
-          : parseFloat(value) * 1000;
-      });
-
-    const totalTransitionTime = Math.max(
-      ...durations.map(function (duration, index) {
-        return duration +
-          (delays[index] || delays[0] || 0);
-      }),
-      0
-    );
-
-    window.setTimeout(
-      startCounters,
-      totalTransitionTime + 50
-    );
+    counters.forEach(function (counter) {
+      animateCounter(counter);
+    });
   }
 
 
@@ -182,10 +117,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!fadeElements.length) return;
 
-    // Assign sequential delays
+    /*
+     * Three elements per row:
+     *
+     * Row 1: 0ms, 150ms, 300ms
+     * Row 2: 100ms, 250ms, 400ms
+     */
     fadeElements.forEach(function (element, index) {
+      const column = index % 3;
+      const row = Math.floor(index / 3);
+
+      const delay =
+        (column * 150) + (row * 100);
+
       element.style.transitionDelay =
-        (index * 150) + 'ms';
+        delay + 'ms';
     });
 
     const fadeObserver = new IntersectionObserver(
@@ -195,12 +141,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
           const fadeElement = entry.target;
 
-          // Prepare counters before activating the fade
-          startCountersAfterFade(fadeElement);
-
           fadeElement.classList.add(
             'fade-in-active'
           );
+
+          /*
+           * Start the number counter when the
+           * corresponding fade animation begins.
+           */
+          requestAnimationFrame(function () {
+            startCounters(fadeElement);
+          });
 
           observer.unobserve(fadeElement);
         });
