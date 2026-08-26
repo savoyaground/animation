@@ -1,376 +1,389 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
+  const prefersReducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches;
 
-  /* ============================
-     Number Counter
-  ============================ */
+  const observeOnce = (elements, callback, options) => {
+    if (!elements.length) return;
 
-  function animateCounter(counter) {
+    if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+      elements.forEach(callback);
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        callback(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, options);
+
+    elements.forEach((element) => observer.observe(element));
+  };
+
+  const setStagger = (elements, interval = 150) => {
+    elements.forEach((element, index) => {
+      const delay = prefersReducedMotion ? 0 : index * interval;
+
+      element.style.transitionDelay = `${delay}ms`;
+      element.dataset.animationDelay = String(delay);
+    });
+  };
+
+  /* ==================================================
+     Number Counters
+     ================================================== */
+
+  const animateCounter = (counter) => {
     if (counter.dataset.counterStarted === 'true') return;
 
     const originalText = counter.textContent.trim();
 
-    // Skip fractions such as 24/7
+    // Fractions such as 24/7 should remain unchanged.
     if (originalText.includes('/')) {
       counter.dataset.counterStarted = 'true';
       return;
     }
 
-    // Separate the numeric value from +, %, K, etc.
     const match = originalText.match(/^([\d,.]+)(.*)$/);
-
     if (!match) return;
 
     const numberText = match[1];
     const suffix = match[2] || '';
-
-    const target = parseFloat(
-      numberText.replace(/,/g, '')
-    );
+    const target = Number.parseFloat(numberText.replace(/,/g, ''));
 
     if (Number.isNaN(target)) return;
 
     counter.dataset.counterStarted = 'true';
 
-    const decimals = numberText.includes('.')
-      ? numberText.split('.')[1].length
-      : 0;
+    if (prefersReducedMotion) return;
 
+    const decimalPosition = numberText.indexOf('.');
+    const decimals = decimalPosition === -1
+      ? 0
+      : numberText.length - decimalPosition - 1;
     const usesCommas = numberText.includes(',');
     const duration = 1100;
     const startTime = performance.now();
 
-    function formatValue(value) {
+    const formatValue = (value) => {
       const formatted = value.toFixed(decimals);
 
       if (!usesCommas) return formatted;
 
-      const parts = formatted.split('.');
+      const [integer, decimal] = formatted.split('.');
+      const localizedInteger = Number(integer).toLocaleString('en-US');
 
-      parts[0] = Number(parts[0]).toLocaleString('en-US');
+      return decimal === undefined
+        ? localizedInteger
+        : `${localizedInteger}.${decimal}`;
+    };
 
-      return parts.join('.');
-    }
+    const updateCounter = (currentTime) => {
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
 
-    function updateCounter(currentTime) {
-      const elapsed = currentTime - startTime;
-
-      const progress = Math.min(
-        elapsed / duration,
-        1
-      );
-
-      // Smooth ease-out
-      const eased =
-        1 - Math.pow(1 - progress, 3);
-
-      const currentValue = target * eased;
-
-      counter.textContent =
-        formatValue(currentValue) + suffix;
+      counter.textContent = `${formatValue(target * easedProgress)}${suffix}`;
 
       if (progress < 1) {
-        requestAnimationFrame(updateCounter);
+        window.requestAnimationFrame(updateCounter);
       } else {
         counter.textContent = originalText;
       }
-    }
+    };
 
-    requestAnimationFrame(updateCounter);
-  }
+    window.requestAnimationFrame(updateCounter);
+  };
 
+  const startCounters = (element) => {
+    const counters = new Set(element.querySelectorAll('.number-counter'));
 
-  /* ============================
-     Start Nested Counters
-  ============================ */
-
-  function startCounters(element) {
-    const counters = [];
-
-    // The animated element is also the counter
     if (element.classList.contains('number-counter')) {
-      counters.push(element);
+      counters.add(element);
     }
 
-    // Counters nested inside the animated element
-    element
-      .querySelectorAll('.number-counter')
-      .forEach(function (counter) {
-        counters.push(counter);
-      });
+    counters.forEach(animateCounter);
+  };
 
-    counters.forEach(function (counter) {
-      animateCounter(counter);
-    });
-  }
+  const startNestedCountersAfterDelay = (element) => {
+    const delay = Number(element.dataset.animationDelay || 0);
 
+    if (delay > 0) {
+      window.setTimeout(() => startCounters(element), delay);
+    } else {
+      startCounters(element);
+    }
+  };
 
-  /* ============================
+  /* ==================================================
      Fade In
-  ============================ */
+     ================================================== */
 
-  const fadeSections =
-    document.querySelectorAll('.fade-section');
+  const fadeElements = [];
 
-  fadeSections.forEach(function (section) {
-    const fadeElements =
-      section.querySelectorAll('.fade-in');
+  document.querySelectorAll('.fade-section').forEach((section) => {
+    const sectionElements = Array.from(section.querySelectorAll('.fade-in'));
 
-    if (!fadeElements.length) return;
-
-    // Apply a 150ms stagger
-    fadeElements.forEach(function (element, index) {
-      const delay = index * 150;
-
-      element.style.transitionDelay =
-        delay + 'ms';
-
-      element.dataset.animationDelay =
-        String(delay);
-    });
-
-    const fadeObserver = new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-
-          const element = entry.target;
-
-          element.classList.add(
-            'fade-in-active'
-          );
-
-          const delay = Number(
-            element.dataset.animationDelay || 0
-          );
-
-          // Start counters when the element starts fading
-          window.setTimeout(function () {
-            startCounters(element);
-          }, delay);
-
-          observer.unobserve(element);
-        });
-      },
-      {
-        threshold: 0.05,
-        rootMargin: '0px 0px 100px 0px'
-      }
-    );
-
-    fadeElements.forEach(function (element) {
-      fadeObserver.observe(element);
-    });
+    setStagger(sectionElements);
+    fadeElements.push(...sectionElements);
   });
 
+  observeOnce(
+    fadeElements,
+    (element) => {
+      element.classList.add('fade-in-active');
+      startNestedCountersAfterDelay(element);
+    },
+    {
+      threshold: 0.05,
+      rootMargin: '0px 0px 100px 0px'
+    }
+  );
 
-  /* ============================
+  /* ==================================================
      Focus In
-  ============================ */
+     ================================================== */
 
-  const focusElements =
-    document.querySelectorAll('.focus-in');
+  const focusElements = Array.from(document.querySelectorAll('.focus-in'));
 
-  if (focusElements.length) {
-    // Apply a 150ms delay between each item
-    focusElements.forEach(function (element, index) {
-      const delay = index * 150;
+  // Restart the stagger for each parent instead of increasing it page-wide.
+  const focusGroups = new Map();
 
-      element.style.transitionDelay =
-        delay + 'ms';
+  focusElements.forEach((element) => {
+    const group = element.parentElement;
 
-      element.dataset.animationDelay =
-        String(delay);
-    });
+    if (!focusGroups.has(group)) focusGroups.set(group, []);
+    focusGroups.get(group).push(element);
+  });
 
-    const focusObserver = new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
+  focusGroups.forEach((elements) => setStagger(elements));
 
-          const element = entry.target;
+  observeOnce(
+    focusElements,
+    (element) => {
+      element.classList.add('focus-in-active');
+      startNestedCountersAfterDelay(element);
+    },
+    {
+      threshold: 0.15,
+      rootMargin: '0px 0px 60px 0px'
+    }
+  );
 
-          element.classList.add(
-            'focus-in-active'
-          );
-
-          const delay = Number(
-            element.dataset.animationDelay || 0
-          );
-
-          // Start counters when the card begins focusing
-          window.setTimeout(function () {
-            startCounters(element);
-          }, delay);
-
-          observer.unobserve(element);
-        });
-      },
-      {
-        threshold: 0.15,
-        rootMargin: '0px 0px 60px 0px'
-      }
-    );
-
-    focusElements.forEach(function (element) {
-      focusObserver.observe(element);
-    });
-  }
-
-
-  /* ============================
+  /* ==================================================
      Standalone Number Counters
-  ============================ */
+     ================================================== */
 
   const standaloneCounters = Array.from(
     document.querySelectorAll('.number-counter')
-  ).filter(function (counter) {
-    return (
-      !counter.closest('.fade-in') &&
-      !counter.closest('.focus-in')
-    );
+  ).filter(
+    (counter) => !counter.closest('.fade-in, .focus-in')
+  );
+
+  observeOnce(standaloneCounters, animateCounter, { threshold: 0.35 });
+
+  /* ==================================================
+     Character Fade
+     ================================================== */
+
+  const characterFadeElements = Array.from(
+    document.querySelectorAll('.character-fade')
+  );
+
+  characterFadeElements.forEach((element) => {
+    if (element.dataset.characterFadeInitialized === 'true') return;
+
+    element.dataset.characterFadeInitialized = 'true';
+
+    const words = element.textContent.trim().replace(/\s+/g, ' ').split(' ');
+    const fragment = document.createDocumentFragment();
+    let characterIndex = 0;
+
+    words.forEach((word) => {
+      const wordElement = document.createElement('span');
+      wordElement.className = 'character-fade-word';
+
+      Array.from(word).forEach((character) => {
+        const characterElement = document.createElement('span');
+
+        characterElement.className = 'character-fade-char';
+        characterElement.style.setProperty(
+          '--character-index',
+          String(characterIndex)
+        );
+        characterElement.textContent = character;
+
+        wordElement.appendChild(characterElement);
+        characterIndex += 1;
+      });
+
+      fragment.appendChild(wordElement);
+    });
+
+    element.replaceChildren(fragment);
   });
 
-  if (standaloneCounters.length) {
-    const counterObserver =
-      new IntersectionObserver(
-        function (entries, observer) {
-          entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
+  observeOnce(
+    characterFadeElements,
+    (element) => element.classList.add('character-fade-active'),
+    {
+      threshold: 0.05,
+      rootMargin: '0px 0px 100px 0px'
+    }
+  );
 
-            animateCounter(entry.target);
-            observer.unobserve(entry.target);
-          });
-        },
-        {
-          threshold: 0.35
-        }
-      );
+  /* ==================================================
+     Mask Reveal Up
+     ================================================== */
 
-    standaloneCounters.forEach(function (counter) {
-      counterObserver.observe(counter);
+  const revealGroups = Array.from(
+    document.querySelectorAll('.reveal-up-group')
+  );
+
+  revealGroups.forEach((group) => {
+    setStagger(Array.from(group.querySelectorAll('.reveal-up')));
+  });
+
+  observeOnce(
+    revealGroups,
+    (group) => {
+      group.querySelectorAll('.reveal-up').forEach((element) => {
+        element.classList.add('reveal-up-active');
+      });
+    },
+    {
+      threshold: 0.15,
+      rootMargin: '0px 0px 60px 0px'
+    }
+  );
+
+  /* ==================================================
+     Vertical Line Reveal
+     ================================================== */
+
+  const verticalLines = Array.from(document.querySelectorAll('.v-line'));
+
+  observeOnce(
+    verticalLines,
+    (line) => line.classList.add('is-visible'),
+    { threshold: 0.1 }
+  );
+
+  /* ==================================================
+     Smooth Sticky Columns
+     ================================================== */
+
+  const stickySections = Array.from(
+    document.querySelectorAll('.js-sticky-section')
+  );
+
+  if (!stickySections.length) return;
+
+  const desktopQuery = window.matchMedia('(min-width: 992px)');
+  const stickyStates = new Map();
+  let animationFrame = null;
+  let previousTime = performance.now();
+
+  stickySections.forEach((section) => {
+    const column = section.querySelector('.js-sticky-left');
+
+    if (!column) return;
+
+    stickyStates.set(section, {
+      column,
+      current: 0,
+      target: 0
     });
-  }
+  });
 
-
-  /* ============================
-     Character Fade
-  ============================ */
-
-  const characterFadeElements =
-    document.querySelectorAll('.character-fade');
-
-  if (characterFadeElements.length) {
-    characterFadeElements.forEach(function (element) {
-      // Prevent duplicate initialization
-      if (
-        element.dataset.characterFadeInitialized === 'true'
-      ) {
+  const calculateStickyTargets = () => {
+    stickyStates.forEach((state, section) => {
+      if (!desktopQuery.matches) {
+        state.current = 0;
+        state.target = 0;
+        state.column.style.transform = '';
+        state.column.style.willChange = '';
         return;
       }
 
-      element.dataset.characterFadeInitialized = 'true';
+      const offset = Number.parseFloat(section.dataset.stickyOffset || '120');
+      const maximumTravel = Math.max(
+        section.offsetHeight - state.column.offsetHeight,
+        0
+      );
+      const requestedTravel = offset - section.getBoundingClientRect().top;
 
-      // Normalize spaces from the original text
-      const text = element.textContent
-        .trim()
-        .replace(/\s+/g, ' ');
+      state.target = Math.min(Math.max(requestedTravel, 0), maximumTravel);
+    });
+  };
 
-      const words = text.split(' ');
+  const renderStickyColumn = (state) => {
+    state.column.style.transform = `translate3d(0, ${state.current.toFixed(2)}px, 0)`;
+  };
 
-      let characterIndex = 0;
+  const animateStickyColumns = (currentTime) => {
+    const elapsed = Math.min(currentTime - previousTime, 64);
+    const smoothing = prefersReducedMotion
+      ? 1
+      : 1 - Math.exp(-0.018 * elapsed);
+    let stillAnimating = false;
 
-      element.innerHTML = words
-        .map(function (word) {
-          const characters = Array.from(word)
-            .map(function (character) {
-              const span =
-                '<span class="character-fade-char" ' +
-                'style="--character-index:' +
-                characterIndex +
-                '">' +
-                character +
-                '</span>';
+    previousTime = currentTime;
 
-              characterIndex++;
+    stickyStates.forEach((state) => {
+      if (!desktopQuery.matches) return;
 
-              return span;
-            })
-            .join('');
+      const difference = state.target - state.current;
 
-          return (
-            '<span class="character-fade-word">' +
-            characters +
-            '</span>'
-          );
-        })
-        .join('');
+      if (Math.abs(difference) > 0.1) {
+        state.current += difference * smoothing;
+        stillAnimating = true;
+      } else {
+        state.current = state.target;
+      }
+
+      state.column.style.willChange = 'transform';
+      renderStickyColumn(state);
     });
 
-    const characterFadeObserver =
-      new IntersectionObserver(
-        function (entries, observer) {
-          entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
+    if (stillAnimating) {
+      animationFrame = window.requestAnimationFrame(animateStickyColumns);
+    } else {
+      stickyStates.forEach((state) => {
+        state.column.style.willChange = '';
+      });
+      animationFrame = null;
+    }
+  };
 
-            entry.target.classList.add(
-              'character-fade-active'
-            );
+  const requestStickyUpdate = () => {
+    calculateStickyTargets();
 
-            observer.unobserve(entry.target);
-          });
-        },
-        {
-          threshold: 0.05,
-          rootMargin: '0px 0px 100px 0px'
-        }
-      );
+    if (animationFrame !== null) return;
 
-    characterFadeElements.forEach(function (element) {
-      characterFadeObserver.observe(element);
+    previousTime = performance.now();
+    animationFrame = window.requestAnimationFrame(animateStickyColumns);
+  };
+
+  window.addEventListener('scroll', requestStickyUpdate, { passive: true });
+  window.addEventListener('resize', requestStickyUpdate);
+  desktopQuery.addEventListener('change', requestStickyUpdate);
+
+  if ('ResizeObserver' in window) {
+    const resizeObserver = new ResizeObserver(requestStickyUpdate);
+
+    stickyStates.forEach((state, section) => {
+      resizeObserver.observe(section);
+      resizeObserver.observe(state.column);
     });
   }
 
+  calculateStickyTargets();
 
-  /* ============================
-     Mask Reveal Up
-  ============================ */
-
-  const revealGroups =
-    document.querySelectorAll('.reveal-up-group');
-
-  revealGroups.forEach(function (group) {
-    const revealElements =
-      group.querySelectorAll('.reveal-up');
-
-    if (!revealElements.length) return;
-
-    // Apply a 150ms delay between each item
-    revealElements.forEach(function (element, index) {
-      element.style.transitionDelay =
-        (index * 150) + 'ms';
-    });
-
-    const revealObserver = new IntersectionObserver(
-      function (entries, observer) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-
-          revealElements.forEach(function (element) {
-            element.classList.add(
-              'reveal-up-active'
-            );
-          });
-
-          observer.unobserve(entry.target);
-        });
-      },
-      {
-        threshold: 0.15,
-        rootMargin: '0px 0px 60px 0px'
-      }
-    );
-
-    revealObserver.observe(group);
+  stickyStates.forEach((state) => {
+    state.current = state.target;
+    renderStickyColumn(state);
   });
-
 });
