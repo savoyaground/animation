@@ -33,6 +33,35 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   /* ==================================================
+     Vertical Line Reveal
+
+     Initialize this independently and early so unrelated animation
+     setup cannot prevent the line observer from registering.
+     ================================================== */
+
+  const verticalLines = document.querySelectorAll('.v-line');
+
+  if (verticalLines.length) {
+    if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+      verticalLines.forEach((line) => line.classList.add('is-visible'));
+    } else {
+      const verticalLineObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        },
+        { threshold: 0.1 }
+      );
+
+      verticalLines.forEach((line) => verticalLineObserver.observe(line));
+    }
+  }
+
+  /* ==================================================
      Number Counters
      ================================================== */
 
