@@ -73,7 +73,7 @@
 .v-line {
   transform: scaleY(0);
   transform-origin: top;
-  transition: transform 1.2s cubic-bezier(0.37, 0, 0.63, 1);
+  transition: transform 1.9s cubic-bezier(0.37, 0, 0.63, 1);
 }
 
 .v-line.is-visible {
