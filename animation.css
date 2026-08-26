@@ -1,61 +1,160 @@
 /* ==================================================
-   FADE IN
-================================================== */
+   Fade In
+   ================================================== */
 
-  /* Initial hidden state for every fade-in element */
-  .fade-section .fade-in {
-    opacity: 0;
-    transform: translateY(24px);
+/* Initial hidden state for every fade-in element. */
+.fade-section .fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+  will-change: opacity, transform;
+}
 
-    /* Controls the fade and upward movement speed */
-    transition:
-      opacity 0.6s ease,
-      transform 0.6s ease;
+/* Added by JavaScript when the section enters the viewport. */
+.fade-section .fade-in.fade-in-active {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-    /* Helps the browser prepare for the animation */
-    will-change: opacity, transform;
-  }
-
-  /* Added by JavaScript when the section enters the viewport */
-  .fade-section .fade-in.fade-in-active {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* Disables animation for users who prefer reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    .fade-section .fade-in {
-      opacity: 1;
-      transform: none;
-      transition: none;
-    }
-  }
-
-/* ============================
+/* ==================================================
    Character Fade
-============================ */
+   ================================================== */
 
 .character-fade {
   white-space: normal;
 }
 
 .character-fade-word {
-  display: inline;
+  display: inline-flex;
+  margin-right: 0.25em;
+  white-space: nowrap;
+}
+
+.character-fade-word:last-child {
+  margin-right: 0;
 }
 
 .character-fade-char {
   display: inline-block;
   opacity: 0;
-  transform: translateY(0.15em);
-
+  transform: translateY(0.25em);
   transition:
-    opacity 0.45s ease,
-    transform 0.45s ease;
-
-  transition-delay: calc(var(--character-index) * 35ms);
+    opacity 320ms ease-out,
+    transform 320ms ease-out;
+  transition-delay: calc(var(--character-index) * 20ms);
 }
 
 .character-fade-active .character-fade-char {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Gold-gradient character variant. */
+.text-gradient-gold.character-fade {
+  background: none;
+  color: inherit;
+  -webkit-text-fill-color: initial;
+}
+
+.text-gradient-gold.character-fade .character-fade-char {
+  background: linear-gradient(135deg, #c56129 0%, #f5ad59 100%);
+  background-clip: text;
+  color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==================================================
+   Vertical Line Reveal
+   ================================================== */
+
+.v-line {
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 1.2s cubic-bezier(0.37, 0, 0.63, 1);
+}
+
+.v-line.is-visible {
+  transform: scaleY(1);
+}
+
+/* ==================================================
+   Focus In
+   ================================================== */
+
+.focus-in {
+  opacity: 0;
+  filter: blur(8px);
+  transform: scale(0.985);
+  transition:
+    opacity 280ms ease-out,
+    filter 280ms ease-out,
+    transform 280ms ease-out;
+  will-change: opacity, filter, transform;
+}
+
+.focus-in.focus-in-active {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* ==================================================
+   Mask Reveal Up
+   ================================================== */
+
+.reveal-up {
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: clip-path;
+}
+
+.reveal-up.reveal-up-active {
+  clip-path: inset(0);
+}
+
+/* ==================================================
+   Sticky Sections
+   ================================================== */
+
+.js-sticky-section {
+  position: relative;
+}
+
+.js-sticky-left {
+  align-self: flex-start;
+}
+
+@media (max-width: 991px) {
+  .js-sticky-left {
+    transform: none !important;
+    will-change: auto !important;
+  }
+}
+
+/* ==================================================
+   Reduced Motion
+   ================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-section .fade-in,
+  .focus-in,
+  .character-fade-char {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+
+  .reveal-up {
+    clip-path: none;
+    transition: none;
+  }
+
+  .v-line {
+    transform: scaleY(1);
+    transition: none;
+  }
 }
