@@ -433,28 +433,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const viewportHeight = window.innerHeight;
       // Read layout before writing transforms.
       const positions = heroes.map(({ container, image }) => {
-        if (reducedMotion.matches) return { image, offset: 0, opacity: 1 };
+        if (reducedMotion.matches) return { container, image, offset: 0, opacity: 1, overlay: 0 };
         const rect = container.getBoundingClientRect();
         if (!rect.height || !viewportHeight) return null;
         const progress = Math.max(0, Math.min(1,
           (viewportHeight - rect.top) / (viewportHeight + rect.height)
         ));
-        // Fade in over the bottom quarter of the viewport, then fade out
+        // Fade in over the bottom quarter of the viewport, then darken
         // once the container top crosses the top-quarter threshold.
         const clamp = value => Math.max(0, Math.min(1, value));
         const smooth = value => value * value * (3 - 2 * value);
         const fadeIn = smooth(clamp((viewportHeight - rect.top) / (viewportHeight * 0.25)));
-        const fadeOut = smooth(clamp(rect.top / (viewportHeight * 0.25)));
+        const darken = 1 - smooth(clamp(rect.top / (viewportHeight * 0.25)));
         // Match the image's 30% overscan at both edges.
         return {
+          container,
           image,
           offset: (progress * 2 - 1) * rect.height * 0.3,
-          opacity: Math.min(fadeIn, fadeOut)
+          opacity: fadeIn,
+          overlay: darken * 0.7
         };
       });
 
       positions.forEach(position => {
         if (!position) return;
+        position.container.style.setProperty('--hero-overlay-opacity', String(position.overlay));
         position.image.style.opacity = String(position.opacity);
         position.image.style.transform = reducedMotion.matches
           ? 'none'
