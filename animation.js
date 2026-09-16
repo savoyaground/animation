@@ -289,18 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   /* ==================================================
-     Vertical Line Reveal
-     ================================================== */
-
-  const verticalLines = Array.from(document.querySelectorAll('.v-line'));
-
-  observeOnce(
-    verticalLines,
-    (line) => line.classList.add('is-visible'),
-    { threshold: 0.1 }
-  );
-
-  /* ==================================================
      Smooth Sticky Columns
      ================================================== */
 
@@ -416,3 +404,73 @@ document.addEventListener('DOMContentLoaded', () => {
     renderStickyColumn(state);
   });
 });
+
+/* Hero image parallax. Load with animation.css.
+   Container: .hero-parallax; direct child image: .hero-parallax-img.
+   Text and buttons remain in normal flow above the image. */
+(() => {
+  'use strict';
+
+  function initHeroImageParallax() {
+    const heroes = Array.from(document.querySelectorAll('.hero-parallax'))
+      .filter(container => !container.hasAttribute('data-hero-parallax-ready'))
+      .map(container => ({
+        container,
+        image: container.querySelector(':scope > .hero-parallax-img')
+      }))
+      .filter(hero => hero.image);
+
+    if (!heroes.length) return;
+    heroes.forEach(({ container }) => {
+      container.setAttribute('data-hero-parallax-ready', '');
+    });
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = null;
+
+    function update() {
+      frame = null;
+      const viewportHeight = window.innerHeight;
+      // Read layout before writing transforms.
+      const positions = heroes.map(({ container, image }) => {
+        if (reducedMotion.matches) return { image, offset: 0 };
+        const rect = container.getBoundingClientRect();
+        if (!rect.height || rect.bottom < 0 || rect.top > viewportHeight) return null;
+        const progress = Math.max(0, Math.min(1,
+          (viewportHeight - rect.top) / (viewportHeight + rect.height)
+        ));
+        // Stay within the image's 10% overscan at both edges.
+        return { image, offset: (progress * 2 - 1) * rect.height * 0.1 };
+      });
+
+      positions.forEach(position => {
+        if (!position) return;
+        position.image.style.transform = reducedMotion.matches
+          ? 'none'
+          : `translate3d(0, ${position.offset}px, 0)`;
+      });
+    }
+
+    function scheduleUpdate() {
+      if (frame === null) frame = window.requestAnimationFrame(update);
+    }
+
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('pageshow', scheduleUpdate);
+    reducedMotion.addEventListener('change', scheduleUpdate);
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(scheduleUpdate);
+      heroes.forEach(({ container }) => observer.observe(container));
+    }
+
+    update();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroImageParallax, { once: true });
+  } else {
+    initHeroImageParallax();
+  }
+})();

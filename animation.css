@@ -158,3 +158,34 @@
     transition: none;
   }
 }
+
+/* ==================================================
+   JavaScript Hero Parallax
+   Set the hero height/min-height in Webflow or let content size it.
+   Use these classes separately from the CSS parallax classes above.
+   ================================================== */
+
+.hero-parallax {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-parallax > .hero-parallax-img {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  width: 100%;
+  height: 120%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-parallax > .hero-parallax-img {
+    transform: none !important;
+  }
+}
