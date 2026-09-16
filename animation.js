@@ -150,26 +150,52 @@ document.addEventListener('DOMContentLoaded', () => {
      Fade In
      ================================================== */
 
-  const fadeElements = [];
+  // Stagger only the elements that enter the viewport together, and cap
+  // the delay, so items deep in a long section don't wait seconds to appear.
+  const FADE_STAGGER = 150;
+  const FADE_MAX_DELAY = 600;
 
-  document.querySelectorAll('.fade-section').forEach((section) => {
-    const sectionElements = Array.from(section.querySelectorAll('.fade-in'));
-
-    setStagger(sectionElements);
-    fadeElements.push(...sectionElements);
-  });
-
-  observeOnce(
-    fadeElements,
-    (element) => {
-      element.classList.add('fade-in-active');
-      startNestedCountersAfterDelay(element);
-    },
-    {
-      threshold: 0.05,
-      rootMargin: '0px 0px 100px 0px'
-    }
+  const fadeElements = Array.from(
+    new Set(document.querySelectorAll('.fade-section .fade-in'))
   );
+
+  const revealFade = (element, delay) => {
+    element.style.transitionDelay = `${delay}ms`;
+    element.dataset.animationDelay = String(delay);
+    element.classList.add('fade-in-active');
+    startNestedCountersAfterDelay(element);
+  };
+
+  const byDocumentOrder = (a, b) =>
+    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+
+  if (fadeElements.length) {
+    if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+      fadeElements.forEach((element) => revealFade(element, 0));
+    } else {
+      const fadeObserver = new IntersectionObserver(
+        (entries) => {
+          entries
+            .filter((entry) => entry.isIntersecting)
+            .map((entry) => entry.target)
+            .sort(byDocumentOrder)
+            .forEach((element, index) => {
+              fadeObserver.unobserve(element);
+              revealFade(
+                element,
+                Math.min(index * FADE_STAGGER, FADE_MAX_DELAY)
+              );
+            });
+        },
+        {
+          threshold: 0.05,
+          rootMargin: '0px 0px 100px 0px'
+        }
+      );
+
+      fadeElements.forEach((element) => fadeObserver.observe(element));
+    }
+  }
 
   /* ==================================================
      Focus In
