@@ -433,18 +433,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const viewportHeight = window.innerHeight;
       // Read layout before writing transforms.
       const positions = heroes.map(({ container, image }) => {
-        if (reducedMotion.matches) return { image, offset: 0 };
+        if (reducedMotion.matches) return { image, offset: 0, opacity: 1 };
         const rect = container.getBoundingClientRect();
-        if (!rect.height || rect.bottom < 0 || rect.top > viewportHeight) return null;
+        if (!rect.height || !viewportHeight) return null;
         const progress = Math.max(0, Math.min(1,
           (viewportHeight - rect.top) / (viewportHeight + rect.height)
         ));
-        // Stay within the image's 10% overscan at both edges.
-        return { image, offset: (progress * 2 - 1) * rect.height * 0.1 };
+        // Fade in over the bottom quarter of the viewport, then fade out
+        // once the container top crosses the top-quarter threshold.
+        const clamp = value => Math.max(0, Math.min(1, value));
+        const smooth = value => value * value * (3 - 2 * value);
+        const fadeIn = smooth(clamp((viewportHeight - rect.top) / (viewportHeight * 0.25)));
+        const fadeOut = smooth(clamp(rect.top / (viewportHeight * 0.25)));
+        // Match the image's 30% overscan at both edges.
+        return {
+          image,
+          offset: (progress * 2 - 1) * rect.height * 0.3,
+          opacity: Math.min(fadeIn, fadeOut)
+        };
       });
 
       positions.forEach(position => {
         if (!position) return;
+        position.image.style.opacity = String(position.opacity);
         position.image.style.transform = reducedMotion.matches
           ? 'none'
           : `translate3d(0, ${position.offset}px, 0)`;
